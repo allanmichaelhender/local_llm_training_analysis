@@ -7,8 +7,8 @@ class LLMService:
         self.base_url = os.getenv("OLLAMA_URL", "http://localhost:11434")
         self.model = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
 
-    def generate_summary(self, garmin_data: dict, user_feedback: str) -> str:
-        prompt = self._build_prompt(garmin_data, user_feedback)
+    def generate_summary(self, workout_data: dict, user_feedback: str) -> str:
+        prompt = self._build_prompt(workout_data, user_feedback)
 
         try:
             response = requests.post(
@@ -28,23 +28,27 @@ class LLMService:
             print(f"Error calling Ollama: {e}")
             return f"Error generating summary: {e}"
 
-    def _build_prompt(self, garmin_data: dict, user_feedback: str) -> str:
-        return f"""You are a concise fitness coach. Analyze this workout and provide a 2-3 sentence summary.
+    def _build_prompt(self, workout_data: dict, user_feedback: str) -> str:
+        return f"""<system>
+You are a concise fitness coach. Analyze this workout and provide a 2-3 sentence summary.
+</system>
 
-WORKOUT DATA:
-- Type: {garmin_data.get("type")}
-- Duration: {garmin_data.get("duration_minutes", 0):.1f} minutes
-- Distance: {garmin_data.get("distance_km", 0):.2f} km
-- Avg Heart Rate: {garmin_data.get("avg_hr")} bpm
-- Max Heart Rate: {garmin_data.get("max_hr")} bpm
-- Calories: {garmin_data.get("calories")}
+<workout>
+    <type>{workout_data.get("type")}</type>
+    <duration>{workout_data.get("duration_minutes", 0):.1f} minutes</duration>
+    <distance>{workout_data.get("distance_km", 0):.2f} km</distance>
+    <avg_hr>{workout_data.get("avg_hr")} bpm</avg_hr>
+    <max_hr>{workout_data.get("max_hr")} bpm</max_hr>
+    <calories>{workout_data.get("calories")}</calories>
+</workout>
 
-ATHLETE FEEDBACK:
+<feedback>
 {user_feedback}
+</feedback>
 
-Provide a brief summary that:
-1. Acknowledges the effort level based on HR data
-2. Comments on the workout relative to the athlete's feedback
-3. Gives one actionable tip for next time
-
-Keep it under 100 words."""
+<instructions>
+    <requirement>Acknowledge the effort level based on HR data</requirement>
+    <requirement>Comment on the workout relative to the athlete's feedback</requirement>
+    <requirement>Give one actionable tip for next time</requirement>
+    <length>Keep it under 100 words</length>
+</instructions>"""

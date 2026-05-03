@@ -19,21 +19,21 @@ from services.database import (
     update_llm_summary,
     get_pending_feedback_activity,
 )
-from services.garmin_browser import GarminBrowserClient
+from services.strava_client import StravaClient
 from services.whatsapp_service import WhatsAppService
 from services.llm_service import LLMService
 
 
 load_dotenv()
 
-POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "300"))
+POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "120"))
 USE_BROWSER = os.getenv("USE_BROWSER", "true").lower() == "true"
 
 
 def main():
     init_db()
 
-    garmin = GarminBrowserClient(headless=False)  # Set headless=True after first login
+    garmin = StravaClient()
     whatsapp = WhatsAppService()
     llm = LLMService()
 
