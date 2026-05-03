@@ -25,6 +25,10 @@ class FITProcessor:
     def _detect_garmin_path(self) -> Optional[str]:
         """Auto-detect Garmin device mount path."""
         common_paths = [
+            # Local project directory (for manual file drops)
+            os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "fit_files"
+            ),
             # Windows
             "D:/Garmin/Activity",
             "E:/Garmin/Activity",

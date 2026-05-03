@@ -10,8 +10,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from services.fit_processor import FITProcessor
 
+
 def main():
-    print("🔧 Testing FIT Processor")
+    print("Testing FIT Processor")
     print("-" * 40)
 
     # Initialize processor
@@ -22,7 +23,7 @@ def main():
     print(f"Activity path: {processor.activity_path}")
 
     if not processor.is_device_connected():
-        print("\n⚠️  No Garmin device detected.")
+        print("\nWARNING: No Garmin device detected.")
         print("   Connect your device or place .fit files in:")
         print("   - D:/Garmin/Activity")
         print("   - E:/Garmin/Activity")
@@ -31,14 +32,14 @@ def main():
 
     # Look for files from last 7 days
     since = datetime.now() - timedelta(days=7)
-    print(f"\n📁 Scanning for files since {since.strftime('%Y-%m-%d')}")
+    print(f"\nScanning for files since {since.strftime('%Y-%m-%d')}")
 
     new_files = processor.find_new_files(since)
     print(f"   Found {len(new_files)} file(s)")
 
     # Parse first file as demo
     for filepath in new_files[:3]:  # Test first 3
-        print(f"\n📄 {os.path.basename(filepath)}")
+        print(f"\nFile: {os.path.basename(filepath)}")
         activity = processor.parse_file(filepath)
 
         if activity:
@@ -48,9 +49,10 @@ def main():
             print(f"   Avg HR: {activity['avg_hr']}")
             print(f"   Calories: {activity['calories']}")
         else:
-            print("   ❌ Failed to parse")
+            print("   ERROR: Failed to parse")
 
-    print("\n✅ Test complete")
+    print("\nTest complete")
+
 
 if __name__ == "__main__":
     main()

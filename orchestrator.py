@@ -19,7 +19,8 @@ from services.database import (
     update_llm_summary,
     get_pending_feedback_activity,
 )
-from services.strava_client import StravaClient
+from services.fit_monitor import FITMonitor
+from services.hr_aggregator import HRAggregator
 from services.whatsapp_service import WhatsAppService
 from services.llm_service import LLMService
 
@@ -33,7 +34,8 @@ USE_BROWSER = os.getenv("USE_BROWSER", "true").lower() == "true"
 def main():
     init_db()
 
-    garmin = StravaClient()
+    garmin = FITMonitor()
+    hr_agg = HRAggregator()
     whatsapp = WhatsAppService()
     llm = LLMService()
 
@@ -53,7 +55,7 @@ def main():
             print(f"[{cycle_start.strftime('%H:%M:%S')}] Checking since {last_checked}")
 
             try:
-                activities = garmin.get_activities_since(last_checked)
+                activities = garmin.check_for_new_workouts()
 
                 for activity in activities:
                     if is_activity_processed(activity["id"]):
@@ -80,8 +82,15 @@ def main():
                             update_user_feedback(pending_id, feedback)
                             print(f"   📨 Feedback received: {feedback[:50]}...")
 
-                            # Generate and send summary
-                            summary = llm.generate_summary(pending_data, feedback)
+                            # Extract HR time series data
+                            hr_series = hr_agg.extract_hr_averages(
+                                pending_data.get("file_path", "")
+                            )
+
+                            # Generate and send summary with HR data
+                            summary = llm.generate_summary(
+                                pending_data, feedback, hr_series
+                            )
                             update_llm_summary(pending_id, summary)
                             whatsapp.send_summary(summary)
                             print("   ✅ Summary sent")
