@@ -43,7 +43,7 @@ def get_last_checked():
 
     if row:
         return datetime.fromisoformat(row[0])
-    return datetime.now() - timedelta(days=7)
+    return datetime.now() - timedelta(days=30)
 
 
 def set_last_checked(timestamp: datetime):
@@ -66,25 +66,28 @@ def is_activity_processed(activity_id: str) -> bool:
     return row is not None
 
 
-def store_activity(activity_id: str, activity_data: dict, modality: str = None):
+def store_activity(activity_id: str, activity_data: dict, modality: str = "unknown"):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO activities (id, activity_data, modality) VALUES (?, ?, ?)",
-        (activity_id, json.dumps(activity_data), modality),
+        "INSERT INTO activities (id, activity_data, modality, created_at) VALUES (?, ?, ?, ?)",
+        (activity_id, json.dumps(activity_data), modality, datetime.now().isoformat()),
     )
     conn.commit()
     conn.close()
+    print(f"   [DB] Activity stored: {activity_id}")
 
 
 def update_user_feedback(activity_id: str, feedback: str):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE activities SET user_feedback = ? WHERE id = ?", (feedback, activity_id)
+        "UPDATE activities SET user_feedback = ?, processed_at = ? WHERE id = ?",
+        (feedback, datetime.now().isoformat(), activity_id),
     )
     conn.commit()
     conn.close()
+    print(f"   [DB] Feedback stored for activity {activity_id}: {feedback[:30]}...")
 
 
 def update_llm_summary(activity_id: str, summary: str):

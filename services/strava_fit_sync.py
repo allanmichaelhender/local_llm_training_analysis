@@ -4,7 +4,7 @@ Matches Strava activities to FIT files by start time for detailed HR data.
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 
 from .fit_processor import FITProcessor
@@ -65,7 +65,9 @@ class StravaFITSync:
                 continue
 
             full_path = os.path.join(activity_path, filepath)
-            file_mtime = datetime.fromtimestamp(os.path.getmtime(full_path))
+            file_mtime = datetime.fromtimestamp(os.path.getmtime(full_path)).replace(
+                tzinfo=timezone.utc
+            )
 
             if start_time <= file_mtime <= end_time:
                 # Parse the FIT file to get actual start time
