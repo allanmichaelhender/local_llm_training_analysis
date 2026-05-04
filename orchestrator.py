@@ -19,8 +19,8 @@ from services.database import (
     update_llm_summary,
     get_pending_feedback_activity,
 )
-from services.fit_monitor import FITMonitor
-from services.hr_aggregator import HRAggregator
+from services.strava_client import StravaClient
+from services.strava_fit_sync import StravaFITSync
 from services.whatsapp_service import WhatsAppService
 from services.llm_service import LLMService
 
@@ -34,8 +34,8 @@ USE_BROWSER = os.getenv("USE_BROWSER", "true").lower() == "true"
 def main():
     init_db()
 
-    garmin = FITMonitor()
-    hr_agg = HRAggregator()
+    garmin = StravaClient()
+    sync_service = StravaFITSync()
     whatsapp = WhatsAppService()
     llm = LLMService()
 
@@ -55,16 +55,25 @@ def main():
             print(f"[{cycle_start.strftime('%H:%M:%S')}] Checking since {last_checked}")
 
             try:
-                activities = garmin.check_for_new_workouts()
+                activities = garmin.get_activities_since(last_checked)
 
-                for activity in activities:
+                # Sync with FIT files for HR data
+                enhanced_activities = sync_service.batch_sync_activities(activities)
+
+                for activity in enhanced_activities:
                     if is_activity_processed(activity["id"]):
                         continue
 
                     print(
                         f"   📍 New activity: {activity['type']} ({activity['duration_minutes']:.1f} min)"
                     )
-                    store_activity(activity["id"], activity)
+                    if activity.get("has_hr_data"):
+                        print("   💓 HR data available from FIT file")
+
+                    modality = activity.get(
+                        "fit_sport", activity.get("type", "unknown")
+                    )
+                    store_activity(activity["id"], activity, modality)
                     whatsapp.send_activity_prompt(activity)
                     print("   📤 WhatsApp prompt sent")
 
@@ -82,10 +91,8 @@ def main():
                             update_user_feedback(pending_id, feedback)
                             print(f"   📨 Feedback received: {feedback[:50]}...")
 
-                            # Extract HR time series data
-                            hr_series = hr_agg.extract_hr_averages(
-                                pending_data.get("file_path", "")
-                            )
+                            # Use HR time series from synced activity data
+                            hr_series = pending_data.get("hr_time_series", [])
 
                             # Generate and send summary with HR data
                             summary = llm.generate_summary(

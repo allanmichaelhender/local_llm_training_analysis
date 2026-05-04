@@ -15,6 +15,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS activities (
             id TEXT PRIMARY KEY,
             activity_data TEXT,
+            modality TEXT,
             user_feedback TEXT,
             llm_summary TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -65,12 +66,12 @@ def is_activity_processed(activity_id: str) -> bool:
     return row is not None
 
 
-def store_activity(activity_id: str, activity_data: dict):
+def store_activity(activity_id: str, activity_data: dict, modality: str = None):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO activities (id, activity_data) VALUES (?, ?)",
-        (activity_id, json.dumps(activity_data)),
+        "INSERT INTO activities (id, activity_data, modality) VALUES (?, ?, ?)",
+        (activity_id, json.dumps(activity_data), modality),
     )
     conn.commit()
     conn.close()

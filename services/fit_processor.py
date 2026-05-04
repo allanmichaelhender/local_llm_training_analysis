@@ -76,7 +76,7 @@ class FITProcessor:
                 data = record.get_values()
                 return {
                     "id": self._generate_id(filepath, data),
-                    "type": self._map_sport(data.get("sport", "unknown")),
+                    "type": data.get("sport", "unknown"),
                     "start_time": data.get("start_time"),
                     "duration_minutes": (data.get("total_elapsed_time", 0) or 0) / 60,
                     "distance_km": (data.get("total_distance", 0) or 0) / 1000,
@@ -100,24 +100,6 @@ class FITProcessor:
         if start_time:
             return f"fit_{start_time.strftime('%Y%m%d_%H%M%S')}"
         return f"fit_{os.path.basename(filepath)}"
-
-    def _map_sport(self, sport: str) -> str:
-        """Map Garmin sport names to our standard types."""
-        sport_map = {
-            "running": "run",
-            "cycling": "ride",
-            "mountain_biking": "ride",
-            "road_biking": "ride",
-            "trail_running": "run",
-            "walking": "walk",
-            "swimming": "swim",
-            "strength_training": "weight_training",
-            "crossfit": "workout",
-            "hiit": "workout",
-            "yoga": "yoga",
-            "pilates": "pilates",
-        }
-        return sport_map.get(sport, sport or "workout")
 
     def _generate_title(self, data: dict) -> str:
         """Generate activity title from sport and time."""
