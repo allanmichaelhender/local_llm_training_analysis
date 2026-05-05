@@ -2,7 +2,14 @@
 
 ## Project Goal
 
-Build a Model Context Protocol (MCP) server that exposes Garmin/Strava fitness data as tools for Claude and ChatGPT. This enables conversational querying of workout data (e.g., "Compare my last 5 runs", "How has my sleep affected my running performance?").
+Build a Model Context Protocol (MCP) server that exposes Garmin/Strava fitness data as tools. This enables conversational querying of workout data (e.g., "Compare my last 5 runs", "How has my sleep affected my running performance?").
+
+The MCP server will be tested with two different client approaches:
+
+1. **Claude Desktop App** - Official Anthropic client with polished UI
+2. **ZeroClaw** - Self-hosted agent runtime with WhatsApp integration
+
+Both clients connect to the same MCP server, allowing comparison of UX, features, and deployment models.
 
 ## Tech Stack
 
@@ -16,9 +23,19 @@ Build a Model Context Protocol (MCP) server that exposes Garmin/Strava fitness d
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Claude/ChatGPT Apps                       │
-│              (via MCP Protocol - stdio/HTTP)                 │
+│                   Client Options (Test Both)                 │
+│                                                              │
+│  Option 1: Claude Desktop App    Option 2: ZeroClaw          │
+│  - Polished UI                   - WhatsApp integration       │
+│  - stdio/HTTP transport          - 30+ channels               │
+│  - Claude-only                   - Multi-LLM support          │
+│  - Cloud SaaS                    - Self-hosted local          │
 └──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+              ┌─────────────────────────────┐
+              │     MCP Protocol (stdio/HTTP) │
+              └─────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -52,12 +69,13 @@ Build a Model Context Protocol (MCP) server that exposes Garmin/Strava fitness d
 ### 1. Docker Compose Configuration (`docker-compose.yml`)
 
 Create services for:
+
 - **mcp-server** - FastAPI application
 - **postgres** - PostgreSQL database
 - **pgadmin** - Database management UI
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -113,6 +131,7 @@ volumes:
 Implement MCP protocol with FastAPI. Key features:
 
 **MCP Protocol Implementation:**
+
 - Support both stdio and HTTP transport
 - Tool registration system
 - Function calling execution
@@ -141,6 +160,7 @@ Implement MCP protocol with FastAPI. Key features:
 ```
 
 **FastAPI Endpoints:**
+
 - `POST /tools/list` - List available tools
 - `POST /tools/call` - Execute a tool
 - `POST /resources/list` - List resources (optional)
@@ -193,6 +213,7 @@ CREATE TABLE llm_summaries (
 ### 4. Garmin/Strava Integration
 
 Reuse existing clients from parent project:
+
 - Copy `services/garmin_client.py` → `app/clients/garmin.py`
 - Copy `services/strava_client.py` → `app/clients/strava.py`
 - Adapt to use PostgreSQL instead of SQLite
@@ -284,12 +305,14 @@ mcp-server/
 ### Tool Definition Format
 
 Each tool must have:
+
 - `name` - Unique identifier
 - `description` - What the tool does (for LLM understanding)
 - `inputSchema` - JSON Schema for parameters
 - `handler` - Function to execute
 
 Example:
+
 ```python
 {
     "name": "get_recent_activities",
@@ -314,6 +337,7 @@ Support both for maximum compatibility.
 ## Development Workflow
 
 1. **Setup:**
+
    ```bash
    cp .env.example .env
    # Edit .env with your credentials
@@ -321,20 +345,35 @@ Support both for maximum compatibility.
    ```
 
 2. **Database Migrations:**
+
    ```bash
    docker-compose exec mcp-server alembic upgrade head
    ```
 
-3. **Test MCP Server:**
+3. **Test MCP Server (HTTP):**
+
    ```bash
    # Test HTTP endpoint
    curl http://localhost:8000/tools/list
-   
-   # Test with Claude Desktop (stdio)
-   # Configure Claude to connect to docker container
    ```
 
-4. **Access pgAdmin:**
+4. **Test with Claude Desktop:**
+
+   ```bash
+   # Configure Claude Desktop to connect via stdio
+   # Settings → MCP Servers → Add Server
+   # Command: docker-compose exec mcp-server python -m mcp_server
+   ```
+
+5. **Test with ZeroClaw:**
+
+   ```bash
+   # Install ZeroClaw
+   # Configure ZeroClaw to connect to MCP server via HTTP
+   # Test tool calls through ZeroClaw
+   ```
+
+6. **Access pgAdmin:**
    - Open http://localhost:5050
    - Login with credentials from .env
    - Connect to postgres:5432
@@ -342,6 +381,7 @@ Support both for maximum compatibility.
 ## Integration with Parent Project
 
 This MCP server should:
+
 - Use the same Garmin/Strava API clients from parent project
 - Migrate existing SQLite data to PostgreSQL (optional)
 - Provide tools that mirror the existing orchestrator functionality
@@ -349,14 +389,35 @@ This MCP server should:
 
 ## Success Criteria
 
+### MCP Server
+
 - [ ] Docker containers start successfully
 - [ ] PostgreSQL database initialized with correct schema
 - [ ] pgAdmin accessible and can query database
 - [ ] MCP server exposes tools via HTTP endpoint
-- [ ] MCP server works with Claude Desktop via stdio
 - [ ] Tools can query Garmin/Strava data
 - [ ] Tools can query local PostgreSQL data
-- [ ] LLM can successfully call tools and get results
+
+### Claude Desktop Integration
+
+- [ ] MCP server works with Claude Desktop via stdio
+- [ ] Claude can successfully call tools and get results
+- [ ] Conversational queries work (e.g., "Compare my last 5 runs")
+- [ ] Multi-step tool chaining works
+
+### ZeroClaw Integration
+
+- [ ] ZeroClaw can connect to MCP server via HTTP
+- [ ] ZeroClaw can successfully call tools and get results
+- [ ] WhatsApp channel integration works
+- [ ] Conversational queries work through ZeroClaw
+
+### Comparison
+
+- [ ] Document setup difficulty for both approaches
+- [ ] Compare user experience and features
+- [ ] Compare privacy and deployment models
+- [ ] Make recommendation based on testing
 
 ## Notes
 
