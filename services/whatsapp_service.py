@@ -1,5 +1,4 @@
 import os
-from datetime import datetime, timedelta, timezone
 from twilio.rest import Client
 
 
@@ -17,11 +16,16 @@ class WhatsAppService:
         return self.client
 
     def send_activity_prompt(self, activity: dict):
+        # Handle raw Garmin MCP data format
+        activity_type = activity.get("activityType", {}).get("typeKey", "unknown")
+        duration = activity.get("duration", 0) / 60
+        avg_hr = activity.get("averageHR", "N/A")
+
         message = (
             f"New workout detected!\n\n"
-            f"Type: {activity['type']}\n"
-            f"Duration: {activity['duration_minutes']:.1f} min\n"
-            f"Avg HR: {activity['avg_hr']} bpm\n\n"
+            f"Type: {activity_type}\n"
+            f"Duration: {duration:.1f} min\n"
+            f"Avg HR: {avg_hr} bpm\n\n"
             f"Reply with: RPE (1-10) and any notes"
         )
         return self._send_message(message)
