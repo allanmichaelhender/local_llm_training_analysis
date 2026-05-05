@@ -1,14 +1,21 @@
 ---
-description: Strava + FIT file sync workflow
+description: Strava + FIT file sync workflow (DEPRECATED)
 ---
 
-# Strava + FIT File Sync Workflow
+# Strava + FIT File Sync Workflow (DEPRECATED)
+
+**⚠️ This workflow has been replaced by the Garmin Connect Direct Workflow.**
+
+See [garmin-connect-workflow.md](./garmin-connect-workflow.md) for the current approach.
+
+---
 
 This workflow uses Strava API for workout detection and syncs with local FIT files for detailed heart rate analysis.
 
 ## Overview
 
 The system:
+
 1. **Detects** new workouts via Strava API
 2. **Syncs** Strava activities with local FIT files by start time
 3. **Enriches** activity data with HR time series from FIT files
@@ -17,22 +24,24 @@ The system:
 
 ## Components
 
-| Component | Purpose | Key Features |
-|-----------|---------|--------------|
-| **StravaClient** | Workout detection | Polls Strava API for new activities |
+| Component         | Purpose              | Key Features                                         |
+| ----------------- | -------------------- | ---------------------------------------------------- |
+| **StravaClient**  | Workout detection    | Polls Strava API for new activities                  |
 | **StravaFITSync** | File synchronization | Matches Strava activities to FIT files by start time |
-| **HRAggregator** | HR data processing | 10-second averages from FIT files |
-| **LLMService** | AI analysis | Incorporates HR patterns into workout insights |
-| **Orchestrator** | Main loop | Coordinates all services |
+| **HRAggregator**  | HR data processing   | 10-second averages from FIT files                    |
+| **LLMService**    | AI analysis          | Incorporates HR patterns into workout insights       |
+| **Orchestrator**  | Main loop            | Coordinates all services                             |
 
 ## Setup
 
 ### 1. Install Dependencies
+
 ```bash
 pip install fitparse>=1.2.0 matplotlib
 ```
 
 ### 2. Configure Environment
+
 ```bash
 # .env file
 STRAVA_CLIENT_ID=your_client_id
@@ -44,17 +53,20 @@ POLL_INTERVAL=120
 ```
 
 ### 3. Prepare FIT Files
+
 - Connect Garmin device via USB, OR
 - Copy .fit files to `fit_files/` directory
 
 ## Running System
 
 ### Start Monitoring
+
 ```bash
 python orchestrator.py
 ```
 
 The system will:
+
 - Check Strava API for new activities every 2 minutes
 - Sync activities with local FIT files by start time
 - Send WhatsApp notifications for new workouts
@@ -62,6 +74,7 @@ The system will:
 - Generate AI-powered workout summary with HR analysis
 
 ### Manual Testing
+
 ```bash
 # Test FIT file parsing
 python test_fit.py
@@ -107,6 +120,7 @@ The HRAggregator reduces raw HR data (1-second samples) to manageable 10-second 
 ## LLM Prompt Structure
 
 The AI receives:
+
 - **Workout Summary**: Strava data (type, duration, distance, HR stats)
 - **HR Time Series**: First/last 5 data points (shows warmup/peak/cooldown)
 - **User Feedback**: Qualitative workout experience
@@ -115,22 +129,26 @@ The AI receives:
 ## Troubleshooting
 
 ### No Strava Activities
+
 - Check Strava API credentials in .env
 - Verify refresh token is valid
 - Run `python test_strava.py` to test connection
 
 ### FIT Files Not Found
+
 - Check device is connected via USB
 - Verify files in `fit_files/` directory
 - Check time window (±5 min) covers your activities
 - Run `python test_fit.py` to verify detection
 
 ### WhatsApp Not Working
+
 - Verify Twilio credentials in .env
 - Check webhook configuration
 - Test with `python test_tokens.py`
 
 ### LLM Not Responding
+
 - Ensure Ollama is running: `ollama serve`
 - Pull model: `ollama pull llama3.2:3b`
 - Check URL: `http://localhost:11434/api/generate`

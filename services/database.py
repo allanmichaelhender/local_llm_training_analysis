@@ -67,11 +67,24 @@ def is_activity_processed(activity_id: str) -> bool:
 
 
 def store_activity(activity_id: str, activity_data: dict, modality: str = "unknown"):
+    """Store a new activity in the database."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+
+    # Convert datetime objects to ISO strings for JSON serialization
+    def serialize_datetime(obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return obj
+
     cursor.execute(
         "INSERT INTO activities (id, activity_data, modality, created_at) VALUES (?, ?, ?, ?)",
-        (activity_id, json.dumps(activity_data), modality, datetime.now().isoformat()),
+        (
+            activity_id,
+            json.dumps(activity_data, default=serialize_datetime),
+            modality,
+            datetime.now().isoformat(),
+        ),
     )
     conn.commit()
     conn.close()

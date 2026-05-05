@@ -49,13 +49,15 @@ def main():
             print(f"[{cycle_start.strftime('%H:%M:%S')}] Checking since {last_checked}")
 
             try:
-                activities = garmin.get_activities(limit=10)
+                activities = garmin.get_activities(limit=1)
                 if not activities:
                     activities = []
 
                 for activity in activities:
                     activity_id = str(activity.get("activityId", ""))
+                    print(f"   Checking activity ID: {activity_id}")
                     if is_activity_processed(activity_id):
+                        print(f"   Activity already processed, skipping")
                         continue
 
                     activity_type = activity.get("activityType", {}).get(

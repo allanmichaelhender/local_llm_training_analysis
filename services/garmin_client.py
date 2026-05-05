@@ -1,39 +1,76 @@
 """
-Garmin Connect MCP client for fetching activity data.
-Wraps Garmin Connect MCP tools for activity detection and HR data retrieval.
+Garmin Connect client for fetching activity data.
+Uses python-garminconnect library directly.
 """
 
+import os
 from typing import List, Dict, Optional
+
+try:
+    from garminconnect import Garmin
+except ImportError:
+    Garmin = None
 
 
 class GarminClient:
-    """Garmin Connect MCP client."""
+    """Garmin Connect client using python-garminconnect library."""
 
     def __init__(self):
-        """Initialize Garmin client (MCP tools are called via Cascade)."""
+        """Initialize Garmin client."""
+        if Garmin is None:
+            raise ImportError(
+                "python-garminconnect not installed. "
+                "Install with: pip install garminconnect"
+            )
+
         self._last_error = None
+        self.garmin = None
+        self._authenticated = False
+
+    def _authenticate(self):
+        """Authenticate with Garmin Connect."""
+        if self._authenticated:
+            return True
+
+        email = os.getenv("GARMIN_EMAIL")
+        password = os.getenv("GARMIN_PASSWORD")
+
+        if not email or not password:
+            raise Exception(
+                "GARMIN_EMAIL and GARMIN_PASSWORD environment variables required"
+            )
+
+        try:
+            print("   Authenticating with Garmin Connect...")
+            self.garmin = Garmin(email, password)
+            self.garmin.login()
+            self._authenticated = True
+            print("   Authentication successful")
+            return True
+        except Exception as e:
+            raise Exception(f"Authentication failed: {e}")
 
     def get_activities(self, limit: int = 20) -> List[Dict]:
         """
-        Get recent activities from Garmin Connect MCP.
+        Get recent activities from Garmin Connect.
 
         Args:
             limit: Number of activities to return (1-100, default 20)
 
         Returns:
-            List of complete raw activity dictionaries from MCP
+            List of complete raw activity dictionaries from Garmin
         """
         try:
             print(f"   Fetching {limit} most recent Garmin activities")
+            self._authenticate()
 
-            # Call MCP tool directly
-            activities = mcp0_get_activities(limit=limit)
+            activities = self.garmin.get_activities(0, limit)
 
             if not activities:
                 print("   No Garmin activities found")
                 return []
 
-            # Return raw activities without formatting
+            # Return raw activities
             for activity in activities:
                 print(
                     f"Found: {activity.get('activityType', {}).get('typeKey', 'unknown')} - {activity.get('activityName', '')}"
@@ -58,7 +95,8 @@ class GarminClient:
         """
         try:
             print(f"   Fetching details for activity {activity_id}")
-            details = mcp0_get_activity_details(activityId=activity_id)
+            self._authenticate()
+            details = self.garmin.get_activity_details(activity_id)
             return details
 
         except Exception as e:
